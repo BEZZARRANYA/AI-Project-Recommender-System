@@ -45,6 +45,18 @@ It also ships with a full **Research / Evaluation Lab**: a password-protected de
   - **Evaluation Lab** — replay saved test personas (e.g. *Beginner Web + JavaScript*, *Beginner AI + Python*, *Intermediate Mobile + Flutter*) against the live engine to sanity-check ranking quality
   - **Audit** — flags projects with missing fields or weak scoring
 - **Recommendation run persistence** — every run is saved to MongoDB with the normalized preferences, full recommendation payload, and Gemini/fallback metadata for reproducibility.
+## 📚 The Dataset
+ 
+The recommender doesn't ask Gemini to invent projects out of thin air — it ranks and personalizes from a **curated corpus of 85 project records**, assembled in three layers:
+ 
+| Source | Role | Records |
+|---|---|---|
+| `backend/seed.js` | Initial base projects | 15 |
+| `backend/data/targetedProjects.js` | Targeted projects by difficulty, tech, category, and type | 40 |
+| `backend/scripts/addDatasetExpansionProjects.js` | Expansion into weak-coverage areas (automation, hardware, VR, Web3, Go, Rust, C++, TensorFlow, etc.) | 30 |
+ 
+Each project record carries `title`, `description`, `technologies`, `difficulty`, `categories`, `projectType`, `features`, and `learning` — the shared vocabulary the scoring engine compares against. A **taxonomy normalization layer** (`backend/services/taxonomy.js`) expands and canonicalizes terms (e.g. "JS" ↔ "JavaScript") so matching isn't broken by wording differences.
+ 
 ## 🏗️ Architecture
  
 ```
@@ -68,11 +80,25 @@ It also ships with a full **Research / Evaluation Lab**: a password-protected de
                                                         └────────────────┘
 ```
  
-**Scoring flow (`backend/services/hybridRecommender.js`):**
-1. `scoreBaselineProjects` — deterministically scores every project against the user's skill, difficulty, tech, and interests.
-2. `pickBaselineWindow` — shortlists the strongest candidates.
-3. `buildHybridRecommendations` — sends the shortlist to the Gemini API for personalized reranking (custom title, brief, milestones, portfolio angle); on failure or timeout, deterministic scores are used as-is.
-4. The API blends `deterministicScore` and `geminiScore` (45/55 weighting) into a final score, sorts Gemini-personalized results above fallback results, and persists the run.
+**1. Deterministic baseline scoring** (`scoreBaselineProjects`) — every project is normalized through the taxonomy layer, then scored out of 100:
+ 
+| Signal | Points |
+|---|---|
+| Difficulty match | 25 |
+| Project type match | 25 |
+| Category / interest overlap | up to 25 |
+| Technology overlap | up to 20 |
+| Skill-to-difficulty alignment | 5 |
+| No meaningful domain overlap | −15 penalty |
+ 
+Each project keeps a `scoreBreakdown` and human-readable `deterministicSignals` (e.g. *"Tech overlap: react"*) so every ranking is explainable.
+ 
+**2. Shortlisting** (`pickBaselineWindow`) — rather than sending the whole 85-project corpus to Gemini, the top ~10 positive-scoring projects are shortlisted (topped up with best-available candidates if fewer than 10 score positively, or a shuffled sample if nothing matches at all) — keeping prompts fast, cheap, and focused.
+ 
+**3. Gemini personalization** (`buildHybridRecommendations`) — the shortlist is sent to Gemini with the user's preferences. Gemini is only allowed to *improve* — personalized titles, briefs, custom features, milestones, portfolio angle, and a fit summary — never to invent a project outside the curated dataset. If Gemini fails, times out, or isn't configured, the deterministic scores are returned as-is (`fallbackUsed`).
+ 
+**4. Final score** — the API blends `deterministicScore` and `geminiScore` (45/55 weighting) into a final score, always ranks Gemini-personalized results above fallback-only results, and persists the full run (preferences, recommendations, Gemini/fallback metadata) to MongoDB.
+ 
 ## 🛠️ Tech Stack
  
 **Frontend:** React 18 · React Router · Framer Motion · GSAP · Tailwind CSS
@@ -149,11 +175,14 @@ cd ../frontend
 npm install
 ```
  
-### 3. Seed the project dataset
+### 3. Seed and build out the project dataset
  
 ```bash
 cd backend
-npm run seed
+npm run seed              # base 15 projects
+npm run expand:projects   # adds the 30-project expansion set
+npm run normalize:projects -- --confirm   # clean up metadata
+npm run audit:projects    # sanity-check the dataset
 ```
  
 ### 4. Run the app
@@ -168,7 +197,9 @@ cd frontend
 npm start
 ```
  
-Visit `http://localhost:3000` and click **Start** to try the questionnaire.
+Visit `http://localhost:3000` and click **Start** to try the questionnaire. Before a demo or thesis defense, run `npm run smoke` from `backend/` to confirm the core workflow (recommend → persist → feedback) is alive end-to-end.
+ 
+> **Windows note:** if PowerShell blocks `npm.ps1`, use `npm.cmd` instead (e.g. `npm.cmd run smoke`) — this is an execution-policy issue, not a project bug.
  
 ## 🔌 API Reference
  
@@ -191,7 +222,7 @@ Run from `backend/`:
 |---|---|
 | `npm run seed` | Seed the initial project dataset |
 | `npm run smoke` | Smoke-test the live API endpoints |
-| `npm run cleanup:smoke` | Remove data generated by the smoke test |
+| `npm run cleanup:smoke` | Dry-run preview of smoke-test data to remove (add `-- --confirm` to actually delete) |
 | `npm run normalize:projects` | Normalize/clean project metadata |
 | `npm run expand:projects` | Add the extended dataset of targeted projects |
 | `npm run audit:projects` | Audit the dataset for missing fields / weak scoring |
@@ -204,10 +235,18 @@ The **Research** tab shows run-based analytics for the current session (Gemini v
 - **Dataset Editor** — inspect and edit the project catalog directly
 ## 🗺️ Roadmap
  
-- [ ] User accounts to save recommendation history across sessions
-- [ ] Expand the curated dataset with community-submitted project ideas
-- [ ] A/B test alternate Gemini prompt strategies against the deterministic baseline
-- [ ] Public deployment (currently a local/thesis demo)
+Known limitations and the planned engineering upgrade path:
+ 
+| Current limitation | Planned upgrade |
+|---|---|
+| Matching relies on taxonomy + string overlap, not semantic meaning | Generate embeddings for projects/preferences and add vector search (FAISS/ChromaDB) |
+| Gemini calls can be slow or fail under load | Cache recommendations by normalized preference signature; move slow calls to an async queue (BullMQ/Redis) |
+| Dev Lab uses a single shared password + signed token | Replace with real user accounts and role-based auth |
+| Only a backend smoke test exists | Add unit tests for scoring, integration tests for the API, and end-to-end tests (Playwright/Cypress) |
+| Report export relies on browser print | Server-side PDF generation |
+| No CI/CD | Enforce build, audit, smoke, and test steps automatically before deploy |
+| Dataset has no indexes | Index `projectType`, `difficulty`, `technologies`, `categories`, `createdAt`, `runId` for faster search/audit |
+ 
 ## 📄 License
  
 This project was built as an academic thesis demo. Add a license of your choice (MIT recommended) if you plan to open it up for reuse.
