@@ -9,6 +9,29 @@ Built as a full-stack thesis demo (MERN + Gemini API)
 <p align="center">
   <img src="./assets/home.jpg" alt="AI Project Recommender - Home" width="100%">
 </p>
+
+![React](https://img.shields.io/badge/React-18-blue)
+
+![Node.js](https://img.shields.io/badge/Node.js-Express-green)
+
+![MongoDB](https://img.shields.io/badge/MongoDB-Database-green)
+
+![Gemini](https://img.shields.io/badge/Google-Gemini-orange)
+
+![License](https://img.shields.io/badge/License-MIT-yellow)
+---
+## Table of Contents
+
+- Overview
+- Features
+- Screenshots
+- Architecture
+- Dataset
+- Installation
+- API
+- Evaluation
+- Roadmap
+- License
 ---
  
 ## ✨ Overview
@@ -250,6 +273,12 @@ Known limitations and the planned engineering upgrade path:
 ## 📄 License
  
 This project was built as an academic thesis demo. Add a license of your choice (MIT recommended) if you plan to open it up for reuse.
+
+## Live Demo
+
+Currently available as a local development build.
+
+Deployment to Render/Vercel is planned.
  
 ## 🙋 Author
  
