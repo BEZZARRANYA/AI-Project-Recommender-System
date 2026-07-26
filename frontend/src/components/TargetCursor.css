@@ -1,0 +1,104 @@
+html.cursor-none-global,
+html.cursor-none-global *,
+body.cursor-none-global,
+body.cursor-none-global * {
+  cursor: none !important;
+}
+
+.target-cursor-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  mix-blend-mode: normal;
+}
+
+.target-cursor-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 110, 60, 0.55);
+  background: radial-gradient(
+    circle,
+    rgba(255, 90, 31, 0.12) 0%,
+    rgba(255, 90, 31, 0.05) 45%,
+    transparent 80%
+  );
+  box-shadow:
+    0 0 18px rgba(255, 90, 31, 0.18),
+    inset 0 0 10px rgba(255, 90, 31, 0.08);
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+}
+
+.target-cursor-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  background: #ff5a1f;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 18px rgba(255, 90, 31, 0.65);
+  will-change: transform, background-color;
+}
+
+.target-cursor-corner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(255, 122, 82, 0.92);
+  box-shadow: 0 0 14px rgba(255, 90, 31, 0.22);
+  will-change: transform;
+}
+
+.corner-tl {
+  transform: translate(-10px, -10px);
+  border-right: none;
+  border-bottom: none;
+  border-top-left-radius: 4px;
+}
+
+.corner-tr {
+  transform: translate(10px, -10px);
+  border-left: none;
+  border-bottom: none;
+  border-top-right-radius: 4px;
+}
+
+.corner-br {
+  transform: translate(10px, 10px);
+  border-left: none;
+  border-top: none;
+  border-bottom-right-radius: 4px;
+}
+
+.corner-bl {
+  transform: translate(-10px, 10px);
+  border-right: none;
+  border-top: none;
+  border-bottom-left-radius: 4px;
+}
+
+@media (pointer: coarse), (max-width: 768px) {
+  .target-cursor-wrapper {
+    display: none;
+  }
+
+  html.cursor-none-global,
+  html.cursor-none-global *,
+  body.cursor-none-global,
+  body.cursor-none-global * {
+    cursor: auto !important;
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed.js",
+    "smoke": "node scripts/smokeTestBackend.js",
+    "cleanup:smoke": "node scripts/cleanupSmokeData.js",
+    "normalize:projects": "node scripts/normalizeProjectMetadata.js",
+    "expand:projects": "node scripts/addDatasetExpansionProjects.js",
+    "audit:projects": "node scripts/auditProjectDataset.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "mongoose": "^9.2.4"
+  }
+}
